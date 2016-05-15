@@ -241,7 +241,7 @@ void setup(void)
   aci_state.aci_pins.spi_clock_divider      = SPI_CLOCK_DIV8;//SPI_CLOCK_DIV8  = 2MHz SPI speed
   //SPI_CLOCK_DIV16 = 1MHz SPI speed
 
-  aci_state.aci_pins.reset_pin              = 4;
+  aci_state.aci_pins.reset_pin              = UNUSED;
   aci_state.aci_pins.active_pin             = UNUSED;
   aci_state.aci_pins.optional_chip_sel_pin  = UNUSED;
 
@@ -255,6 +255,7 @@ void setup(void)
   // Install interrupt for RDYN line of nRF8001 for event handling.
   // We use a level-interrupt that can also fire in sleep mode to
   // wake up the Arduino when an event is received.
+  pinMode(2, INPUT_PULLUP);
   attachInterrupt(RDYN_INTR_NO, rdyn_isr, LOW);
 }
 
@@ -279,6 +280,7 @@ void loop()
   // We enter the if statement only when there is a ACI event available to be processed
   if (lib_aci_event_get(&aci_state, &aci_data))
   {
+    Serial.println(F("ACI Event available"));
     aci_evt_t * aci_evt;
     aci_evt = &aci_data.evt;
     switch (aci_evt->evt_opcode)
@@ -345,6 +347,8 @@ void loop()
         {
           Serial.println(F("Evt Disconnected. Link Loss"));
         }
+        Serial.println(F("Restarting Broadcast."));
+        lib_aci_connect(0, 0x0100);
         break;
 
       case ACI_EVT_DATA_RECEIVED:
@@ -374,17 +378,19 @@ void loop()
   else
   {
     if (!setup_required) {
-    Serial.println(F("No ACI Events available, no setup required."));
-    ble_ready = false;
-    attachInterrupt(RDYN_INTR_NO, rdyn_isr, LOW);
-    // No event in the ACI Event queue
-    // Arduino can go to sleep now
-    Serial.println(F("Arduino going to sleep."));
-    delay(100); // Allow for completion of serial transmission
-    do_sleep();
-    Serial.print(F("Arduino woke up. Wakeuo-Counter: "));
-    Serial.println(wakeupCounter, DEC);
-    // Wakeup from sleep from the RDYN line
+      Serial.println(F("No ACI Events available, no setup required."));
+      ble_ready = false;
+      attachInterrupt(RDYN_INTR_NO, rdyn_isr, LOW);
+      // No event in the ACI Event queue
+      // Arduino can go to sleep now
+      Serial.println(F("Arduino going to sleep."));
+      delay(100); // Allow for completion of serial transmission
+      do_sleep();
+      Serial.print(F("Arduino woke up. Wakeup-Counter: "));
+      Serial.println(wakeupCounter, DEC);
+      // Wakeup from sleep from the RDYN line
+    } else {
+      Serial.println(F("No ACI Events available, setup required"));
     }
   }
 
@@ -394,6 +400,7 @@ void loop()
   */
   if (setup_required)
   {
+    Serial.println(F("Doing nRF8001 Setup"));
     if (SETUP_SUCCESS == do_aci_setup(&aci_state))
     {
       setup_required = false;
