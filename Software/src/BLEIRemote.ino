@@ -52,16 +52,14 @@
 // Glue Code and State Machine to nRF8001
 #include "bleadapter.h"
 
-#include "EdgeDetector.h"
 #include "WatchdogManager.h"
+#include "SensorStateMachine.h"
 
 // Interrupt PIN used for Wakeup from nrf8001
 #define RDYN_INTR_NO 0
 volatile unsigned long wakeupCounter = 0;
 
-BoolEdgeDetector batterySubscribed;
-
-int batteryValueSample = 0;
+BatterySensorStateMachine batterySensorSM(PIPE_BATTERY_BATTERY_LEVEL_TX);
 
 /** 
  * ISR for RDYN low events
@@ -83,13 +81,14 @@ void ble_dataReceived_Cbk(uint8_t pipe, uint8_t * data, uint8_t len) {
 
 void ble_pipeEvent_Cbk() {
   bool batteryPipeAvailable = lib_aci_is_pipe_available(&aci_state, PIPE_BATTERY_BATTERY_LEVEL_TX);
-  EdgeType batteryServiceEdge = batterySubscribed.setValueDetectEdge(batteryPipeAvailable);
-  if (batteryServiceEdge != EdgeType::kNoEdge) {
+  if (batteryPipeAvailable != batterySensorSM.isEnabled()) {
     Serial.print(F("Battery Service "));
-    if (batteryServiceEdge == EdgeType::kRising) {
-      // Battery Service was subscribed. Start the timer.
+    // Edge in some direction detected
+    if (batteryPipeAvailable) {
+      batterySensorSM.enable();
       incrementWatchdogEnableCount();
-    } else if (batteryServiceEdge == EdgeType::kFalling) {
+    } else {
+      batterySensorSM.disable();
       decrementWatchdogEnableCount();
       Serial.print(F("un"));
     }
@@ -100,36 +99,6 @@ void ble_pipeEvent_Cbk() {
 bool workAvailable() {
   return irsnd_is_busy() || ble_available() || wdg_expired();
 }
-
-/**
- * \brief Sample the current battery value and send it out as ble data.
- */
-void sampleBattery() {
-  if (lib_aci_is_pipe_available(&aci_state, PIPE_BATTERY_BATTERY_LEVEL_TX)) {
-    // Sample sensor
-    Serial.print(F("Sampling Battery: "));
-    power_adc_enable();
-    // 0 = 0V; 1023 = 3.3V
-    // Voltage divider gives half the value -> reading 3.3V is a completely full battery  
-    batteryValueSample = analogRead(A3);
-    power_adc_disable();
-    uint8_t batteryPercentage = map(batteryValueSample, 0, 1023, 0, 100);
-    Serial.print(batteryPercentage, DEC);
-    Serial.println(F("%."));
-
-    if (lib_aci_get_nb_available_credits(&aci_state) > 0) {
-      bool sendSuccess = lib_aci_send_data(PIPE_BATTERY_BATTERY_LEVEL_TX, (uint8_t*)&batteryPercentage, sizeof(batteryPercentage));
-      if (sendSuccess) {
-        Serial.println(F("Send Battery worked."));
-      } else {
-        Serial.println(F("Send Battery did not work."));
-      }
-    } else {
-      Serial.println(F("No credits available."));
-    }
-  }
-}
-
 
 /**
  * Put device into power-down mode to save as much energy as possible.
@@ -214,11 +183,14 @@ void loop()
   // Perform Watchdog Events
   if (wdg_expired()) {
     Serial.println(F("Watchdog expired."));
-    if (batterySubscribed.getValue()) {
-      sampleBattery();
+    if (batterySensorSM.isEnabled()) {
+      batterySensorSM.startSampling();
     }
     wdg_reset_expiry();
   }
+
+  // Perform possibly pending transmissions.
+  batterySensorSM.transmitSample();
 
   if (!workAvailable()) {
     attachInterrupt(RDYN_INTR_NO, rdyn_isr, LOW);
