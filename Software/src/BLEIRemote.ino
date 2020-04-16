@@ -124,6 +124,8 @@ void sampleBattery() {
       } else {
         Serial.println(F("Send Battery did not work."));
       }
+    } else {
+      Serial.println(F("No credits available."));
     }
   }
 }

@@ -94,6 +94,7 @@ void ble_loop() {
       case ACI_EVT_DEVICE_STARTED:
         {
           aci_state.data_credit_available = aci_evt->params.device_started.credit_available;
+          aci_state.data_credit_total = aci_evt->params.device_started.credit_available;
           switch (aci_evt->params.device_started.device_mode)
           {
             case ACI_DEVICE_SETUP:
