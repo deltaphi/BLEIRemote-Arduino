@@ -40,26 +40,13 @@
 
 */
 
-/* use TimerOne http://arduino.cc/playground/Code/Timer1 for interrupts */
-#include <TimerOne.h>
 /* first include Arduino.h, the IDE includes it after irmp*.h ... */
 #include "Arduino.h"
 /* ... and then chokes on uintX_t ... */
 #include <avr/sleep.h>
 #include <avr/power.h>
 
-extern "C" {
-//#include <irmp.h>
-#include <irsnd.h>
-}
-
-void printFrame(IRMP_DATA & frame);
-
-/* F_INTERRUPTS is the interrupt frequency defined in irmpconfig.h */
-#define US (1000000 / F_INTERRUPTS)
-
-IRMP_DATA irmp_data;
-
+#include "irsndadapter.h"
 
 #include <SPI.h>
 #include <EEPROM.h>
@@ -173,23 +160,6 @@ void do_sleep()
         sleep_disable();
     }
 }
-  
-void printFrame(IRMP_DATA & frame) {
-  Serial.print(F("P:"));
-  Serial.print(frame.protocol, HEX);
-  Serial.print(F(" A:"));
-  Serial.print(frame.address, HEX);
-  Serial.print(F(" C:"));
-  Serial.print(frame.command, HEX);
-  Serial.print(F(" "));
-  Serial.println(frame.flags, HEX);
-}
-
-/* helper function: attachInterrupt wants void(), but irmp_ISR is uint8_t() */
-void timerinterrupt()
-{
-  irsnd_ISR();          // call irsnd ISR
-}
 
 void setup(void)
 {
@@ -206,14 +176,7 @@ void setup(void)
   Serial.println(F("Arduino setup"));
   power_adc_disable();
 
-  /*irmp_init();
-    Timer1.initialize(US);
-    Timer1.attachInterrupt(timerinterrupt);
-    Serial.println(F("IRMP Detector ready.\n\n"));
-  */
-  irsnd_init();
-  Timer1.initialize(US);
-  Timer1.attachInterrupt(timerinterrupt);
+  IRSND_adapter_init();
 
   if (NULL != services_pipe_type_mapping)
   {
@@ -257,20 +220,6 @@ void setup(void)
   // wake up the Arduino when an event is received.
   pinMode(2, INPUT_PULLUP);
   attachInterrupt(RDYN_INTR_NO, rdyn_isr, LOW);
-}
-
-void receivedIRMPPacket(aci_evt_t * aci_evt) {
-  Serial.print(F("IRMP Packet received\n"));
-  memcpy(&irmp_data, &(aci_evt->params.data_received.rx_data.aci_data[0]), sizeof(IRMP_DATA));
-  Serial.println(F("Received Frame: "));
-  printFrame(irmp_data);
-  
-  if (!irsnd_is_busy()) {
-    Serial.println(F("IRSND idle. Sending IR frame."));
-    irsnd_send_data(&irmp_data, TRUE);
-  } else {
-    Serial.println(F("IRSND busy. Dropping IR frame."));
-  }
 }
 
 void loop()
@@ -359,7 +308,7 @@ void loop()
 
         if (PIPE_IRSND_IRMP_PACKET_RX_ACK_AUTO == aci_evt->params.data_received.rx_data.pipe_number) {
           /* Received an IRMP packet */
-          receivedIRMPPacket(aci_evt);
+          receivedIRMPPacket(&(aci_evt->params.data_received.rx_data.aci_data[0]));
         }
 
         break;

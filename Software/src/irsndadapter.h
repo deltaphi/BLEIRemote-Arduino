@@ -1,3 +1,13 @@
+#include <Arduino.h>
+
+extern "C" {
+//#include <irmp.h>
+#include <irsnd.h>
+}
+
+/* F_INTERRUPTS is the interrupt frequency defined in irmpconfig.h */
+#define US (1000000 / F_INTERRUPTS)
+
 // typical protocols, disable here!             Enable  Remarks                 F_INTERRUPTS            Program Space
 #define IRSND_SUPPORT_SIRCS_PROTOCOL            1       // Sony SIRCS           >= 10000                 ~200 bytes
 #define IRSND_SUPPORT_NEC_PROTOCOL              1       // NEC + APPLE          >= 10000                 ~100 bytes
@@ -44,3 +54,13 @@
 #define IRSND_SUPPORT_S100_PROTOCOL             0       // S100                 >= 10000                 ~150 bytes
 #define IRSND_SUPPORT_ACP24_PROTOCOL            0       // ACP24                >= 10000                 ~150 bytes
 #define IRSND_SUPPORT_TECHNICS_PROTOCOL         1       // TECHNICS             >= 10000                 ~150 bytes
+
+void printFrame(IRMP_DATA & frame);
+
+void IRSND_adapter_init();
+void IRSND_timerinterrupt();
+/**
+ * \brief
+ * \param data Assumed to contain sizeof(IRMP_DATA) bytes.
+ */
+void receivedIRMPPacket(const uint8_t * data);
