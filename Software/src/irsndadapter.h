@@ -1,3 +1,6 @@
+#ifndef __IRSNDADAPTER_H__
+#define __IRSNDADAPTER_H__
+
 #include <Arduino.h>
 
 extern "C" {
@@ -64,3 +67,5 @@ void IRSND_timerinterrupt();
  * \param data Assumed to contain sizeof(IRMP_DATA) bytes.
  */
 void receivedIRMPPacket(const uint8_t * data);
+
+#endif // __IRSNDADAPTER_H__
