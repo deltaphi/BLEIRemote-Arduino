@@ -17,6 +17,7 @@
   However this removes the need to do the setup of the nRF8001 on every reset.
 */
 
+extern struct aci_state_t aci_state;
 
 void ble_setup();
 /**

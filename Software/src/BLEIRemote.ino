@@ -56,6 +56,8 @@
 #define RDYN_INTR_NO 0
 volatile unsigned long wakeupCounter = 0;
 
+int batteryValue = 0;
+
 /** 
  * ISR for RDYN low events
  */
@@ -76,6 +78,45 @@ void ble_dataReceived_Cbk(uint8_t pipe, uint8_t * data, uint8_t len) {
 
 bool workAvailable() {
   return irsnd_is_busy() || ble_available();
+}
+
+constexpr const int kMaxBattery = 1023;
+
+constexpr uint8_t convertBatteryPercentage(int batteryValue) {
+  // 0 = 0V; 1023 = 3.3V
+  // Voltage divider gives half the value -> reading 3.3V is a completely full battery  
+  return (batteryValue * 100) / kMaxBattery;
+}
+
+/**
+ * \brief Sample the current battery value and send it out as ble data.
+ */
+void sampleBattery() {
+  if (lib_aci_is_pipe_available(&aci_state, PIPE_BATTERY_BATTERY_LEVEL_TX)) {
+    // Sample sensor
+    Serial.print(F("Sampling Battery: "));
+    power_adc_enable();
+    batteryValue = analogRead(A3);
+    power_adc_disable();
+    uint8_t batteryPercentage = convertBatteryPercentage(batteryValue);
+    float voltage = batteryValue * 3.3 / 1023.0;
+    Serial.print(batteryPercentage, DEC);
+    Serial.print(F("%, 0x"));
+    Serial.print(batteryValue, HEX);
+    Serial.print(F(", "));
+    Serial.print(voltage);
+    Serial.println("V");
+
+
+    if (lib_aci_get_nb_available_credits(&aci_state) > 0) {
+      bool sendSuccess = lib_aci_send_data(PIPE_BATTERY_BATTERY_LEVEL_TX, (uint8_t*)&batteryPercentage, sizeof(batteryPercentage));
+      if (sendSuccess) {
+        Serial.println(F("Send Battery worked."));
+      } else {
+        Serial.println(F("Send Battery did not work."));
+      }
+    }
+  }
 }
 
 
@@ -152,6 +193,10 @@ void setup(void)
 
 void loop()
 {
+  if (wakeupCounter % 4 == 0) {
+    sampleBattery();
+  }
+
   // Loop the BLE state machine. Returns true when there is additional work to be done.
   ble_loop();
 
