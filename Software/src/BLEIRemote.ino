@@ -80,14 +80,6 @@ bool workAvailable() {
   return irsnd_is_busy() || ble_available();
 }
 
-constexpr const int kMaxBattery = 1023;
-
-constexpr uint8_t convertBatteryPercentage(int batteryValue) {
-  // 0 = 0V; 1023 = 3.3V
-  // Voltage divider gives half the value -> reading 3.3V is a completely full battery  
-  return (batteryValue * 100) / kMaxBattery;
-}
-
 /**
  * \brief Sample the current battery value and send it out as ble data.
  */
@@ -96,9 +88,11 @@ void sampleBattery() {
     // Sample sensor
     Serial.print(F("Sampling Battery: "));
     power_adc_enable();
+  // 0 = 0V; 1023 = 3.3V
+  // Voltage divider gives half the value -> reading 3.3V is a completely full battery  
     batteryValue = analogRead(A3);
     power_adc_disable();
-    uint8_t batteryPercentage = convertBatteryPercentage(batteryValue);
+    uint8_t batteryPercentage = map(batteryValue, 0, 1023, 0, 100);
     float voltage = batteryValue * 3.3 / 1023.0;
     Serial.print(batteryPercentage, DEC);
     Serial.print(F("%, 0x"));
