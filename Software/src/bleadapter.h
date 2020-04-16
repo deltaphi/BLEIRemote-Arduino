@@ -31,5 +31,6 @@ void ble_setWorkAvailable();
 
 
 extern void ble_dataReceived_Cbk(uint8_t pipe, uint8_t * data, uint8_t len);
+extern void ble_pipeEvent_Cbk();
 
 #endif // __BLEADAPTER_H__

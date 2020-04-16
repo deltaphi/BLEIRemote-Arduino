@@ -135,10 +135,12 @@ void ble_loop() {
 
       case ACI_EVT_CONNECTED:
         Serial.println(F("Evt Connected"));
+        ble_pipeEvent_Cbk();
         break;
 
       case ACI_EVT_PIPE_STATUS:
         Serial.println(F("Evt Pipe Status"));
+        ble_pipeEvent_Cbk();
         break;
 
       case ACI_EVT_DISCONNECTED:
@@ -152,6 +154,7 @@ void ble_loop() {
         }
         Serial.println(F("Restarting Broadcast."));
         lib_aci_connect(0, 0x0100);
+        ble_pipeEvent_Cbk();
         break;
 
       case ACI_EVT_DATA_RECEIVED:
@@ -175,6 +178,7 @@ void ble_loop() {
           Serial.write(aci_evt->params.hw_error.file_name[counter]); //uint8_t file_name[20];
         }
         Serial.println();
+        ble_pipeEvent_Cbk();
         break;
     }
   }

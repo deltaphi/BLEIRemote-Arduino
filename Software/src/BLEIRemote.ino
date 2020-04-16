@@ -52,11 +52,16 @@
 // Glue Code and State Machine to nRF8001
 #include "bleadapter.h"
 
+#include "EdgeDetector.h"
+#include "WatchdogManager.h"
+
 // Interrupt PIN used for Wakeup from nrf8001
 #define RDYN_INTR_NO 0
 volatile unsigned long wakeupCounter = 0;
 
-int batteryValue = 0;
+BoolEdgeDetector batterySubscribed;
+
+int batteryValueSample = 0;
 
 /** 
  * ISR for RDYN low events
@@ -76,8 +81,24 @@ void ble_dataReceived_Cbk(uint8_t pipe, uint8_t * data, uint8_t len) {
   }
 }
 
+void ble_pipeEvent_Cbk() {
+  bool batteryPipeAvailable = lib_aci_is_pipe_available(&aci_state, PIPE_BATTERY_BATTERY_LEVEL_TX);
+  EdgeType batteryServiceEdge = batterySubscribed.setValueDetectEdge(batteryPipeAvailable);
+  if (batteryServiceEdge != EdgeType::kNoEdge) {
+    Serial.print(F("Battery Service "));
+    if (batteryServiceEdge == EdgeType::kRising) {
+      // Battery Service was subscribed. Start the timer.
+      incrementWatchdogEnableCount();
+    } else if (batteryServiceEdge == EdgeType::kFalling) {
+      decrementWatchdogEnableCount();
+      Serial.print(F("un"));
+    }
+    Serial.println(F("subscribed."));
+  }
+}
+
 bool workAvailable() {
-  return irsnd_is_busy() || ble_available();
+  return irsnd_is_busy() || ble_available() || wdg_expired();
 }
 
 /**
@@ -88,19 +109,13 @@ void sampleBattery() {
     // Sample sensor
     Serial.print(F("Sampling Battery: "));
     power_adc_enable();
-  // 0 = 0V; 1023 = 3.3V
-  // Voltage divider gives half the value -> reading 3.3V is a completely full battery  
-    batteryValue = analogRead(A3);
+    // 0 = 0V; 1023 = 3.3V
+    // Voltage divider gives half the value -> reading 3.3V is a completely full battery  
+    batteryValueSample = analogRead(A3);
     power_adc_disable();
-    uint8_t batteryPercentage = map(batteryValue, 0, 1023, 0, 100);
-    float voltage = batteryValue * 3.3 / 1023.0;
+    uint8_t batteryPercentage = map(batteryValueSample, 0, 1023, 0, 100);
     Serial.print(batteryPercentage, DEC);
-    Serial.print(F("%, 0x"));
-    Serial.print(batteryValue, HEX);
-    Serial.print(F(", "));
-    Serial.print(voltage);
-    Serial.println("V");
-
+    Serial.println(F("%."));
 
     if (lib_aci_get_nb_available_credits(&aci_state) > 0) {
       bool sendSuccess = lib_aci_send_data(PIPE_BATTERY_BATTERY_LEVEL_TX, (uint8_t*)&batteryPercentage, sizeof(batteryPercentage));
@@ -183,16 +198,25 @@ void setup(void)
   // wake up the Arduino when an event is received.
   pinMode(2, INPUT_PULLUP);
   attachInterrupt(RDYN_INTR_NO, rdyn_isr, LOW);
+
+  wdg_init();
 }
 
 void loop()
 {
-  if (wakeupCounter % 4 == 0) {
-    sampleBattery();
+  // Loop the BLE state machine. Returns true when there is additional work to be done.
+  if (ble_available()) {
+    ble_loop();
   }
 
-  // Loop the BLE state machine. Returns true when there is additional work to be done.
-  ble_loop();
+  // Perform Watchdog Events
+  if (wdg_expired()) {
+    Serial.println(F("Watchdog expired."));
+    if (batterySubscribed.getValue()) {
+      sampleBattery();
+    }
+    wdg_reset_expiry();
+  }
 
   if (!workAvailable()) {
     attachInterrupt(RDYN_INTR_NO, rdyn_isr, LOW);
