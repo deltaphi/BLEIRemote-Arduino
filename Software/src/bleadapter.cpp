@@ -132,6 +132,20 @@ void ble_loop() {
           Serial.println(F("Evt Cmd respone: Error. Arduino is in an while(1); loop"));
           while (1);
         }
+        
+        else {
+          if (ACI_CMD_GET_TEMPERATURE == aci_evt->params.cmd_rsp.cmd_opcode) {
+            // requested temperature data
+
+            Serial.print(F("nRF8001 raw Temperature: "));
+            Serial.println(aci_evt->params.cmd_rsp.params.get_temperature.temperature_value, HEX);
+            // Swap temperature bytes
+            uint16_t temperature = aci_evt->params.cmd_rsp.params.get_temperature.temperature_value;
+            //temperature = (temperature << 8) && (temperature >> 8);
+            // Callback
+            ble_temperature_Cbk(temperature);
+          }
+        }
         break;
 
       case ACI_EVT_CONNECTED:

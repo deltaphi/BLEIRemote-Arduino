@@ -60,6 +60,7 @@
 volatile unsigned long wakeupCounter = 0;
 
 BatterySensorStateMachine batterySensorSM(PIPE_BATTERY_BATTERY_LEVEL_TX);
+nrf8001TemperatureSensorStateMachine nRFTemperatureSensorSM(PIPE_ENVIRONMENTAL_SENSING_TEMPERATURE_MEASUREMENT_TX);
 
 /** 
  * ISR for RDYN low events
@@ -94,7 +95,27 @@ void ble_pipeEvent_Cbk() {
     }
     Serial.println(F("subscribed."));
   }
+
+  bool temperaturePipeAvailable = lib_aci_is_pipe_available(&aci_state, PIPE_ENVIRONMENTAL_SENSING_TEMPERATURE_MEASUREMENT_TX);
+  if (temperaturePipeAvailable != nRFTemperatureSensorSM.isEnabled()) {
+    Serial.print(F("Battery Service "));
+    // Edge in some direction detected
+    if (temperaturePipeAvailable) {
+      nRFTemperatureSensorSM.enable();
+      incrementWatchdogEnableCount();
+    } else {
+      nRFTemperatureSensorSM.disable();
+      decrementWatchdogEnableCount();
+      Serial.print(F("un"));
+    }
+    Serial.println(F("subscribed."));
+  }
 }
+
+void ble_temperature_Cbk(uint16_t temperature) {
+  nRFTemperatureSensorSM.handleTemperatureEvent(temperature);
+}
+
 
 bool workAvailable() {
   return irsnd_is_busy() || ble_available() || wdg_expired();
@@ -186,11 +207,15 @@ void loop()
     if (batterySensorSM.isEnabled()) {
       batterySensorSM.startSampling();
     }
+    if (nRFTemperatureSensorSM.isEnabled()) {
+      nRFTemperatureSensorSM.startSampling();
+    }
     wdg_reset_expiry();
   }
 
   // Perform possibly pending transmissions.
   batterySensorSM.transmitSample();
+  nRFTemperatureSensorSM.transmitSample();
 
   if (!workAvailable()) {
     attachInterrupt(RDYN_INTR_NO, rdyn_isr, LOW);

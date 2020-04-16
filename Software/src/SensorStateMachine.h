@@ -84,4 +84,27 @@ class BatterySensorStateMachine: public SensorStateMachine<uint8_t> {
   }
 };
 
+class nrf8001TemperatureSensorStateMachine: public SensorStateMachine<uint16_t> {
+ public:
+  using SensorStateMachine<uint16_t>::SensorStateMachine;
+
+  void startSampling() {
+    Serial.println(F("Requesting Temperature from nRF8001."));
+    if (lib_aci_get_temperature()) {
+      this->SensorStateMachine<uint16_t>::startSampling();
+    } else {
+      state = SensorValueStatus::kIdle;
+    }
+  }
+
+  void handleTemperatureEvent(uint16_t receivedValue) {
+    Serial.print(F("nRF8001 Temperature: "));
+    Serial.println(receivedValue / 4, DEC);
+    
+    value = receivedValue;
+    state = SensorValueStatus::kSampleAvailable;
+  }
+
+};
+
 #endif //  __SENSORSTATEMACHINE_H__
