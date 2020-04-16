@@ -17,14 +17,17 @@
   However this removes the need to do the setup of the nRF8001 on every reset.
 */
 
-extern volatile bool ble_ready;
 
 void ble_setup();
 /**
  * \brief Performs the event loop of the ACI adapter.
  * \returns true if there is work pending, false otherwise.
  */
-bool ble_loop();
+void ble_loop();
+
+bool ble_available();
+void ble_setWorkAvailable();
+
 
 extern void ble_dataReceived_Cbk(uint8_t pipe, uint8_t * data, uint8_t len);
 

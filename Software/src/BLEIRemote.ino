@@ -64,7 +64,7 @@ void rdyn_isr()
     // This is a level interrupt that would fire again while the
     // signal is low. Thus, we need to detach the interrupt.
     detachInterrupt(RDYN_INTR_NO);
-    ble_ready = true;  
+    ble_setWorkAvailable();
     ++wakeupCounter;
 }
 
@@ -72,6 +72,10 @@ void ble_dataReceived_Cbk(uint8_t pipe, uint8_t * data, uint8_t len) {
   if (PIPE_IRSND_IRMP_PACKET_RX_ACK_AUTO == pipe) {
     receivedIRMPPacket(data);
   }
+}
+
+bool workAvailable() {
+  return irsnd_is_busy() || ble_available();
 }
 
 
@@ -88,7 +92,7 @@ void do_sleep()
     // (interrupt firing before going to sleep would prevent MCU from
     // waking by interrupt).
     cli();
-    if (ble_ready) {
+    if (workAvailable()) {
         // Last chance to stay awake.
         sei();
     } else {
@@ -148,15 +152,10 @@ void setup(void)
 
 void loop()
 {
-  bool workAvailable = false;
-
   // Loop the BLE state machine. Returns true when there is additional work to be done.
-  workAvailable |= ble_loop();
+  ble_loop();
 
-  // Returns true when irsnd is currently transmitting - avoid sleeping during that time.
-  workAvailable |= irsnd_is_busy();
-
-  if (!workAvailable) {
+  if (!workAvailable()) {
     attachInterrupt(RDYN_INTR_NO, rdyn_isr, LOW);
     // No event in the ACI Event queue
     // Arduino can go to sleep now

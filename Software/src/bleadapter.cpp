@@ -1,6 +1,8 @@
 #include "bleadapter.h"
 
 volatile bool ble_ready;
+bool setup_required = false;
+
 
 #ifdef SERVICES_PIPE_TYPE_MAPPING_CONTENT
 static services_pipe_type_mapping_t
@@ -25,6 +27,14 @@ static const hal_aci_data_t setup_msgs[NB_SETUP_MESSAGES] PROGMEM = SETUP_MESSAG
 static struct aci_state_t aci_state;
 static hal_aci_evt_t aci_data;
 static hal_aci_data_t aci_cmd;
+
+bool ble_available() {
+  return ble_ready || setup_required;
+}
+
+void ble_setWorkAvailable() {
+  ble_ready = true;
+}
 
 void ble_setup() {
 
@@ -68,8 +78,7 @@ void ble_setup() {
   lib_aci_init(&aci_state, false);
 }
 
-bool ble_loop() {
-  static bool setup_required = false;
+void ble_loop() {
 
   // We enter the if statement only when there is a ACI event available to be processed
   if (lib_aci_event_get(&aci_state, &aci_data))
@@ -187,7 +196,6 @@ bool ble_loop() {
       }
     }
   }
-  return setup_required | ble_ready;
 }
 
 /* Define how assert should function in the BLE library */
