@@ -56,6 +56,7 @@
 #include "SensorStateMachine.h"
 #include "BatterySensorStateMachine.h"
 #include "nrf8001TemperatureSensorStateMachine.h"
+#include "BME280TemperatureSensorStateMachine.h"
 
 // Interrupt PIN used for Wakeup from nrf8001
 #define RDYN_INTR_NO 0
@@ -63,6 +64,7 @@ volatile unsigned long wakeupCounter = 0;
 
 BatterySensorStateMachine batterySensorSM(PIPE_BATTERY_BATTERY_LEVEL_TX);
 nrf8001TemperatureSensorStateMachine nRFTemperatureSensorSM(PIPE_ENVIRONMENTAL_SENSING_TEMPERATURE_MEASUREMENT_TX);
+BME280TemperatureSensorStateMachine bmeTemperatureSensorSM(PIPE_ENVIRONMENTAL_SENSING_TEMPERATURE_MEASUREMENT_TX);
 
 /** 
  * ISR for RDYN low events
@@ -99,14 +101,14 @@ void ble_pipeEvent_Cbk() {
   }
 
   bool temperaturePipeAvailable = lib_aci_is_pipe_available(&aci_state, PIPE_ENVIRONMENTAL_SENSING_TEMPERATURE_MEASUREMENT_TX);
-  if (temperaturePipeAvailable != nRFTemperatureSensorSM.isEnabled()) {
+  if (temperaturePipeAvailable != bmeTemperatureSensorSM.isEnabled()) {
     Serial.print(F("Battery Service "));
     // Edge in some direction detected
     if (temperaturePipeAvailable) {
-      nRFTemperatureSensorSM.enable();
+      bmeTemperatureSensorSM.enable();
       incrementWatchdogEnableCount();
     } else {
-      nRFTemperatureSensorSM.disable();
+      bmeTemperatureSensorSM.disable();
       decrementWatchdogEnableCount();
       Serial.print(F("un"));
     }
@@ -187,6 +189,8 @@ void setup(void)
 
   ble_setup();
 
+  bmeTemperatureSensorSM.init();
+
   // Install interrupt for RDYN line of nRF8001 for event handling.
   // We use a level-interrupt that can also fire in sleep mode to
   // wake up the Arduino when an event is received.
@@ -212,12 +216,16 @@ void loop()
     if (nRFTemperatureSensorSM.isEnabled()) {
       nRFTemperatureSensorSM.startSampling();
     }
+    if (bmeTemperatureSensorSM.isEnabled()) {
+      bmeTemperatureSensorSM.startSampling();
+    }
     wdg_reset_expiry();
   }
 
   // Perform possibly pending transmissions.
   batterySensorSM.transmitSample();
   nRFTemperatureSensorSM.transmitSample();
+  bmeTemperatureSensorSM.transmitSample();
 
   if (!workAvailable()) {
     attachInterrupt(RDYN_INTR_NO, rdyn_isr, LOW);
