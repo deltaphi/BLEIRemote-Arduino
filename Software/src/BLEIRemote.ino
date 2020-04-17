@@ -54,6 +54,8 @@
 
 #include "WatchdogManager.h"
 #include "SensorStateMachine.h"
+#include "BatterySensorStateMachine.h"
+#include "nrf8001TemperatureSensorStateMachine.h"
 
 // Interrupt PIN used for Wakeup from nrf8001
 #define RDYN_INTR_NO 0

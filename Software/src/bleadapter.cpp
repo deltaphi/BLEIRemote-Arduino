@@ -24,9 +24,9 @@ static const hal_aci_data_t setup_msgs[NB_SETUP_MESSAGES] PROGMEM = SETUP_MESSAG
 // Current connection interval, slave latency and link supervision timeout
 // Current State of the the GATT client (Service Discovery)
 // Status of the bond (R) Peer address
-static struct aci_state_t aci_state;
+struct aci_state_t aci_state;
 static hal_aci_evt_t aci_data;
-static hal_aci_data_t aci_cmd;
+//static hal_aci_data_t aci_cmd;
 
 bool ble_available() {
   return ble_ready || setup_required;

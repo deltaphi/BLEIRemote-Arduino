@@ -3,6 +3,8 @@
 
 #include <Arduino.h>
 
+#include "bleadapter.h"
+
 enum class SensorValueStatus {
     kOff = 0, ///< Sensor is not being read.
     kIdle,  ///< Sensor is being read but no reading is in progress.
@@ -62,49 +64,6 @@ class SensorStateMachine {
   uint8_t pipe;
   SensorValueStatus state = SensorValueStatus::kOff;
   SensorValueType value;
-};
-
-class BatterySensorStateMachine: public SensorStateMachine<uint8_t> {
- public:
-  using SensorStateMachine<uint8_t>::SensorStateMachine;
-
-  void startSampling() {
-    this->SensorStateMachine<uint8_t>::startSampling();
-    power_adc_enable();
-    // 0 = 0V; 1023 = 3.3V
-    // Voltage divider gives half the value -> reading 3.3V is a completely full battery  
-    int sample = analogRead(A3);
-    power_adc_disable();
-    
-    value = map(sample, 0, 1023, 0, 100);
-    Serial.print(F("Battery power: "));
-    Serial.print(value, DEC);
-    Serial.println("%");
-    state = SensorValueStatus::kSampleAvailable;
-  }
-};
-
-class nrf8001TemperatureSensorStateMachine: public SensorStateMachine<uint16_t> {
- public:
-  using SensorStateMachine<uint16_t>::SensorStateMachine;
-
-  void startSampling() {
-    Serial.println(F("Requesting Temperature from nRF8001."));
-    if (lib_aci_get_temperature()) {
-      this->SensorStateMachine<uint16_t>::startSampling();
-    } else {
-      state = SensorValueStatus::kIdle;
-    }
-  }
-
-  void handleTemperatureEvent(uint16_t receivedValue) {
-    Serial.print(F("nRF8001 Temperature: "));
-    Serial.println(receivedValue / 4, DEC);
-    
-    value = receivedValue;
-    state = SensorValueStatus::kSampleAvailable;
-  }
-
 };
 
 #endif //  __SENSORSTATEMACHINE_H__
