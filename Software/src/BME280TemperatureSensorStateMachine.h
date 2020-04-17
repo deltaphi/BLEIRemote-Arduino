@@ -3,19 +3,19 @@
 
 #include <Arduino.h>
 #include "SensorStateMachine.h"
-#include "SparkFunBME280.h"
+#include "bme280.h"
 
 class BME280TemperatureSensorStateMachine
-    : public SensorStateMachine<uint16_t> {
+    : public SensorStateMachine<int16_t> {
  public:
-  using SensorStateMachine<uint16_t>::SensorStateMachine;
+  using SensorStateMachine<int16_t>::SensorStateMachine;
 
   void init();
 
   void startSampling();
 
  private:
-  BME280 bme280;
+  struct bme280_dev dev;
 };
 
 #endif  //  __BME280TEMPERATURESENSORSTATEMACHINE_H__

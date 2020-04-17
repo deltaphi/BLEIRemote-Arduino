@@ -63,7 +63,7 @@
 volatile unsigned long wakeupCounter = 0;
 
 BatterySensorStateMachine batterySensorSM(PIPE_BATTERY_BATTERY_LEVEL_TX);
-nrf8001TemperatureSensorStateMachine nRFTemperatureSensorSM(PIPE_ENVIRONMENTAL_SENSING_TEMPERATURE_MEASUREMENT_TX);
+//nrf8001TemperatureSensorStateMachine nRFTemperatureSensorSM(PIPE_ENVIRONMENTAL_SENSING_TEMPERATURE_MEASUREMENT_TX);
 BME280TemperatureSensorStateMachine bmeTemperatureSensorSM(PIPE_ENVIRONMENTAL_SENSING_TEMPERATURE_MEASUREMENT_TX);
 
 /** 
@@ -102,24 +102,26 @@ void ble_pipeEvent_Cbk() {
 
   bool temperaturePipeAvailable = lib_aci_is_pipe_available(&aci_state, PIPE_ENVIRONMENTAL_SENSING_TEMPERATURE_MEASUREMENT_TX);
   if (temperaturePipeAvailable != bmeTemperatureSensorSM.isEnabled()) {
-    Serial.print(F("Battery Service "));
+    Serial.print(F("Temperature Service "));
     // Edge in some direction detected
     if (temperaturePipeAvailable) {
       bmeTemperatureSensorSM.enable();
-      nRFTemperatureSensorSM.enable();
+      //nRFTemperatureSensorSM.enable();
       incrementWatchdogEnableCount();
     } else {
       bmeTemperatureSensorSM.disable();
-      nRFTemperatureSensorSM.disable();
+      //nRFTemperatureSensorSM.disable();
       decrementWatchdogEnableCount();
       Serial.print(F("un"));
     }
     Serial.println(F("subscribed."));
   }
+  Serial.print(F("Temperature Pipe: "));
+  Serial.println(temperaturePipeAvailable, DEC);
 }
 
 void ble_temperature_Cbk(uint16_t temperature) {
-  nRFTemperatureSensorSM.handleTemperatureEvent(temperature);
+  //nRFTemperatureSensorSM.handleTemperatureEvent(temperature);
 }
 
 
@@ -215,9 +217,11 @@ void loop()
     if (batterySensorSM.isEnabled()) {
       batterySensorSM.startSampling();
     }
+    /*
     if (nRFTemperatureSensorSM.isEnabled()) {
       nRFTemperatureSensorSM.startSampling();
     }
+    */
     if (bmeTemperatureSensorSM.isEnabled()) {
       bmeTemperatureSensorSM.startSampling();
     }
@@ -226,7 +230,7 @@ void loop()
 
   // Perform possibly pending transmissions.
   batterySensorSM.transmitSample();
-  nRFTemperatureSensorSM.transmitSample();
+  //nRFTemperatureSensorSM.transmitSample();
   bmeTemperatureSensorSM.transmitSample();
 
   if (!workAvailable()) {
