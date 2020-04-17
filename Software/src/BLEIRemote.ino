@@ -106,9 +106,11 @@ void ble_pipeEvent_Cbk() {
     // Edge in some direction detected
     if (temperaturePipeAvailable) {
       bmeTemperatureSensorSM.enable();
+      nRFTemperatureSensorSM.enable();
       incrementWatchdogEnableCount();
     } else {
       bmeTemperatureSensorSM.disable();
+      nRFTemperatureSensorSM.disable();
       decrementWatchdogEnableCount();
       Serial.print(F("un"));
     }

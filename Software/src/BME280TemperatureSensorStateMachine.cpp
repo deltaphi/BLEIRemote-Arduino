@@ -36,12 +36,17 @@ void BME280TemperatureSensorStateMachine::startSampling() {
   Serial.print(bme280.readFloatPressure(), 0);
 
   Serial.print(" Alt: ");
-  //Serial.print(mySensor.readFloatAltitudeMeters(), 1);
-  Serial.print(bme280.readFloatAltitudeFeet(), 1);
+  Serial.print(bme280.readFloatAltitudeMeters(), 1);
+  //Serial.print(bme280.readFloatAltitudeFeet(), 1);
+
+  float temp = bme280.readTempC();
+  value = temp;
 
   Serial.print(" Temp: ");
-  Serial.print(bme280.readTempC(), 2);
+  Serial.print(temp, 2);
   //Serial.print(bme280.readTempF(), 2);
 
   Serial.println();
+
+  this->state == SensorValueStatus::kSampleAvailable;
 }
