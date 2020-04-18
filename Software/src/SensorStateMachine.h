@@ -5,6 +5,8 @@
 
 #include "bleadapter.h"
 
+void do_transmit_single(uint8_t pipe, uint8_t* value, uint8_t valueLen);
+
 enum class SensorValueStatus {
     kOff = 0, ///< Sensor is not being read.
     kIdle,  ///< Sensor is being read but no reading is in progress.
@@ -17,44 +19,22 @@ class SensorStateMachine {
  public:
   SensorStateMachine(uint8_t pipe): pipe(pipe) {}
 
-  SensorValueType getValue() {
-    return value;
-  }
-  SensorValueType getState() {
-    return state;
-  }
-
+  SensorValueType getValue() { return value; }
+  SensorValueType getState() { return state; }
 
   void enable() {
-      if (!isEnabled()) {
-          state = SensorValueStatus::kIdle;
-      }
+    if (!isEnabled()) {
+      state = SensorValueStatus::kIdle;
+    }
   }
-  void disable() {
-      state = SensorValueStatus::kOff;
-  }
-  bool isEnabled() {
-      return state != SensorValueStatus::kOff;
-  }
+  void disable() { state = SensorValueStatus::kOff; }
+  bool isEnabled() { return state != SensorValueStatus::kOff; }
 
-  void startSampling() {
-      state = SensorValueStatus::kSampling;
-  }
+  void startSampling() { state = SensorValueStatus::kSampling; }
 
   void transmitSample() {
     if (state == SensorValueStatus::kSampleAvailable) {
-      Serial.print(F("Transmitting sample for Pipe "));
-      Serial.print(pipe, DEC);
-      if (lib_aci_get_nb_available_credits(&aci_state) > 0) {
-        bool sendSuccess = lib_aci_send_data(pipe, (uint8_t*)&value, sizeof(value));
-        if (sendSuccess) {
-            Serial.println(F(": Success."));
-        } else {
-            Serial.println(F(": Failed."));
-        }
-      } else {
-        Serial.println(F(": No credits available."));
-      }
+      do_transmit_single(pipe, (uint8_t*)&value, sizeof(value));
       state = SensorValueStatus::kIdle;
     }
   }
@@ -66,4 +46,4 @@ class SensorStateMachine {
   SensorValueType value;
 };
 
-#endif //  __SENSORSTATEMACHINE_H__
+#endif  //  __SENSORSTATEMACHINE_H__
