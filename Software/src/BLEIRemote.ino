@@ -53,10 +53,10 @@
 #include "bleadapter.h"
 
 #include "WatchdogManager.h"
-#include "SensorStateMachine.h"
-#include "BatterySensorStateMachine.h"
-#include "nrf8001TemperatureSensorStateMachine.h"
-#include "BME280TemperatureSensorStateMachine.h"
+#include "Sensors/SensorStateMachine.h"
+#include "Sensors/BatterySensorStateMachine.h"
+//#include "Sensors/nrf8001TemperatureSensorStateMachine.h"
+#include "Sensors/BME280TemperatureSensorStateMachine.h"
 
 // Interrupt PIN used for Wakeup from nrf8001
 #define RDYN_INTR_NO 0
@@ -202,6 +202,12 @@ void setup(void)
   attachInterrupt(RDYN_INTR_NO, rdyn_isr, LOW);
 
   wdg_init();
+  
+  batterySensorSM.startSampling();
+  batterySensorSM.disable();
+  
+  bmeTemperatureSensorSM.startSampling();
+  bmeTemperatureSensorSM.disable();
 }
 
 void loop()
