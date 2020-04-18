@@ -29,23 +29,10 @@ int8_t user_i2c_read(uint8_t dev_id, uint8_t reg_addr, uint8_t *reg_data,
                      uint16_t len) {
   int8_t rslt = 0; /* Return 0 for Success, non-zero for failure */
 
-/*
-  Serial.print(F("user_i2c_read("));
-  Serial.print(dev_id, HEX);
-  Serial.print(", ");
-  Serial.print(reg_addr, HEX);
-  Serial.print(", [");
-  for (uint8_t i = 0; i < len; ++i) {
-    Serial.print(reg_data[i], HEX);
-    Serial.print(" ");
-  }
-  Serial.println("])");
-*/
-
   Wire.beginTransmission(dev_id);
   Wire.write(reg_addr);
   rslt = Wire.endTransmission();
-  
+
   if (rslt == 0) {
     Wire.requestFrom(dev_id, len);
     Wire.readBytes(reg_data, len);
@@ -79,19 +66,6 @@ int8_t user_i2c_read(uint8_t dev_id, uint8_t reg_addr, uint8_t *reg_data,
 int8_t user_i2c_write(uint8_t dev_id, uint8_t reg_addr, uint8_t *reg_data,
                       uint16_t len) {
   int8_t rslt = 0; /* Return 0 for Success, non-zero for failure */
-
-/*
-  Serial.print(F("user_i2c_write("));
-  Serial.print(dev_id, HEX);
-  Serial.print(", ");
-  Serial.print(reg_addr, HEX);
-  Serial.print(", [");
-  for (uint8_t i = 0; i < len; ++i) {
-    Serial.print(reg_data[i], HEX);
-    Serial.print(" ");
-  }
-  Serial.println("])");
-*/
 
   /*
    * The parameter dev_id can be used as a variable to store the I2C address of
@@ -138,10 +112,12 @@ void BME280TemperatureSensorStateMachine::init() {
 
 void BME280TemperatureSensorStateMachine::startSampling() {
   Serial.println(F("Requesting Measurements from BME280."));
-  bmeErrorCheck(bme280_set_sensor_mode(BME280_FORCED_MODE, &dev), "bme280_set_sensor_mode");
+  bmeErrorCheck(bme280_set_sensor_mode(BME280_FORCED_MODE, &dev),
+                "bme280_set_sensor_mode");
 
   bme280_data comp_data;
-  bmeErrorCheck(bme280_get_sensor_data(BME280_ALL, &comp_data, &dev), "bme280_get_sensor_data");
+  bmeErrorCheck(bme280_get_sensor_data(BME280_ALL, &comp_data, &dev),
+                "bme280_get_sensor_data");
 
   // Tmperature in 100th oC
   // 1024ths % relative humidity
