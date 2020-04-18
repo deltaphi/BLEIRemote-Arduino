@@ -4,8 +4,10 @@
 
 #include <EEPROM.h>
 #include <SPI.h>
-#include <aci_setup.h>
+// clang-format off
 #include <lib_aci.h>
+#include <aci_setup.h>
+// clang-format on
 
 /**
   Put the nRF8001 setup in the RAM of the nRF8001.
