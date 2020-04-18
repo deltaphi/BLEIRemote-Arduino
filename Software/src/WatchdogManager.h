@@ -20,7 +20,7 @@ inline void wdg_reset_expiry() { wdgFlag = false; };
 
 /**
  * \brief Increment the reference count on watchdog activations.
- * 
+ *
  * When the count is > 0, the watchdog interrupt will be enabled.
  * The device will be periodically woken by the watchdog.
  */
@@ -28,10 +28,10 @@ void incrementWatchdogEnableCount();
 
 /**
  * \brief Decrement the reference count on watchdog activations.
- * 
+ *
  * When the count is == 0, the watchdog interrupt will be disabled.
  * The Watchdog will then no longer wake the device.
  */
 void decrementWatchdogEnableCount();
 
-#endif //  __WATCHDOGMANAGER_H__
+#endif  //  __WATCHDOGMANAGER_H__
