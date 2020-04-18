@@ -5,7 +5,7 @@
 
 #include "bleadapter.h"
 
-void do_transmit_single(uint8_t pipe, uint8_t* value, uint8_t valueLen);
+bool do_transmit_single(uint8_t pipe, uint8_t* value, uint8_t valueLen);
 
 enum class SensorValueStatus {
     kOff = 0, ///< Sensor is not being read.
@@ -28,14 +28,17 @@ class SensorStateMachine {
     }
   }
   void disable() { state = SensorValueStatus::kOff; }
-  bool isEnabled() { return state != SensorValueStatus::kOff; }
+  bool isEnabled() const { return state != SensorValueStatus::kOff; }
+  bool isDataPending() const { return state == SensorValueStatus::kSampleAvailable; }
 
   void startSampling() { state = SensorValueStatus::kSampling; }
 
   void transmitSample() {
     if (state == SensorValueStatus::kSampleAvailable) {
-      do_transmit_single(pipe, (uint8_t*)&value, sizeof(value));
-      state = SensorValueStatus::kIdle;
+      bool sendSucces = do_transmit_single(pipe, (uint8_t*)&value, sizeof(value));
+      if (sendSucces) {
+        state = SensorValueStatus::kIdle;
+      }
     }
   }
 

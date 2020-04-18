@@ -126,7 +126,8 @@ void ble_temperature_Cbk(uint16_t temperature) {
 
 
 bool workAvailable() {
-  return irsnd_is_busy() || ble_available() || wdg_expired();
+  return irsnd_is_busy() || ble_available() || wdg_expired() ||
+    bmeTemperatureSensorSM.isDataPending() || batterySensorSM.isDataPending();
 }
 
 /**
