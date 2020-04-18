@@ -106,6 +106,16 @@ void BME280TemperatureSensorStateMachine::init() {
 
   bmeErrorCheck(bme280_init(&dev), "bme280_init");
 
+  bmeErrorCheck(bme280_get_sensor_settings(&dev), "bme280_get_sensor_settings");
+  dev.settings.osr_h = BME280_OVERSAMPLING_1X;
+  dev.settings.osr_p = BME280_OVERSAMPLING_1X;
+  dev.settings.osr_t = BME280_OVERSAMPLING_1X;
+  dev.settings.filter = BME280_FILTER_COEFF_OFF;
+  bmeErrorCheck(bme280_set_sensor_settings(BME280_ALL_SETTINGS_SEL, &dev),
+                "bme280_set_sensor_settings");
+
+  measurementDelay = bme280_cal_meas_delay(&dev.settings);
+
   bmeErrorCheck(bme280_set_sensor_mode(BME280_SLEEP_MODE, &dev),
                 "bme280_set_sensor_mode");
 }
@@ -114,6 +124,8 @@ void BME280TemperatureSensorStateMachine::startSampling() {
   Serial.println(F("Requesting Measurements from BME280."));
   bmeErrorCheck(bme280_set_sensor_mode(BME280_FORCED_MODE, &dev),
                 "bme280_set_sensor_mode");
+
+  delay(measurementDelay);
 
   bme280_data comp_data;
   bmeErrorCheck(bme280_get_sensor_data(BME280_ALL, &comp_data, &dev),

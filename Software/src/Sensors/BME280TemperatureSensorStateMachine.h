@@ -16,6 +16,7 @@ class BME280TemperatureSensorStateMachine : public SensorStateMachine<int16_t> {
 
  private:
   struct bme280_dev dev;
+  uint32_t measurementDelay;
 };
 
 #endif  //  __BME280TEMPERATURESENSORSTATEMACHINE_H__
