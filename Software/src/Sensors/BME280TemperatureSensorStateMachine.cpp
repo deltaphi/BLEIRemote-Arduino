@@ -137,11 +137,11 @@ void BME280TemperatureSensorStateMachine::init() {
 }
 
 void BME280TemperatureSensorStateMachine::startSampling() {
-  Serial.println(F("Requesting Temperature from BME280."));
-  bmeErrorCheck(bme280_set_sensor_mode(BME280_FORCED_MODE, &dev));
+  Serial.println(F("Requesting Measurements from BME280."));
+  bmeErrorCheck(bme280_set_sensor_mode(BME280_FORCED_MODE, &dev), "bme280_set_sensor_mode");
 
   bme280_data comp_data;
-  bmeErrorCheck(bme280_get_sensor_data(BME280_ALL, &comp_data, &dev));
+  bmeErrorCheck(bme280_get_sensor_data(BME280_ALL, &comp_data, &dev), "bme280_get_sensor_data");
 
   // Tmperature in 100th oC
   // 1024ths % relative humidity
@@ -161,10 +161,10 @@ void BME280TemperatureSensorStateMachine::startSampling() {
   // Serial.print(" Measure time(ms): ");
   // Serial.print(endTime - startTime);
 
-  Serial.print(" Humidity: ");
+  Serial.print(F(" Humidity: "));
   Serial.print(comp_data.humidity / 1024, DEC);
 
-  Serial.print(" Pressure: ");
+  Serial.print(F(" Pressure: "));
   Serial.print(comp_data.pressure, DEC);
 
   /*
@@ -175,11 +175,16 @@ void BME280TemperatureSensorStateMachine::startSampling() {
     float temp = bme280.readTempC();
     value = temp;
   */
-  Serial.print(" Temp: ");
-  Serial.print(comp_data.temperature / 100, DEC);
+  Serial.print(F(" Temp: "));
+  float temperature = comp_data.temperature / 100.0f;
+  Serial.print(temperature, DEC);
   // Serial.print(bme280.readTempF(), 2);
 
-  value = comp_data.temperature / 100;
+  // comp_data.temperature is given in 100ths of degrees
+  // we want to TX hunders of degrees -> matches!
+  // But we need a sign-perfect narrowing conversion.
+
+  value = comp_data.temperature;
 
   Serial.println();
 
