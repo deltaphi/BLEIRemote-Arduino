@@ -35,8 +35,6 @@ void incrementWatchdogEnableCount() {
     Serial.print(F("Enabling Watchdog."));
     wdg_start();
     ++watchdogEnableCount;
-    // Simulate immediate expiry
-    wdgFlag = true;
   }
   Serial.print(F("Increment Watchdog Count to "));
   Serial.println(watchdogEnableCount, DEC);

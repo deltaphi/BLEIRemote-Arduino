@@ -94,6 +94,7 @@ void ble_pipeEvent_Cbk() {
     if (batteryPipeAvailable) {
       batterySensorSM.enable();
       incrementWatchdogEnableCount();
+      batterySensorSM.startSampling();
     } else {
       batterySensorSM.disable();
       decrementWatchdogEnableCount();
@@ -111,6 +112,7 @@ void ble_pipeEvent_Cbk() {
       bmeTemperatureSensorSM.enable();
       // nRFTemperatureSensorSM.enable();
       incrementWatchdogEnableCount();
+      bmeTemperatureSensorSM.startSampling();
     } else {
       bmeTemperatureSensorSM.disable();
       // nRFTemperatureSensorSM.disable();
