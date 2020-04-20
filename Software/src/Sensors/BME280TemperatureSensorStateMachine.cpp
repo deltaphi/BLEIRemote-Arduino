@@ -120,6 +120,13 @@ void BME280TemperatureSensorStateMachine::init() {
                 "bme280_set_sensor_mode");
 }
 
+void BME280TemperatureSensorStateMachine::enable() {
+  if (!isEnabled()) {
+    nextSensorForTX = 0;
+  }
+  ParentType::enable();
+}
+
 void BME280TemperatureSensorStateMachine::startSampling() {
   Serial.println(F("Requesting Measurements from BME280."));
   bmeErrorCheck(bme280_set_sensor_mode(BME280_FORCED_MODE, &dev),
@@ -127,8 +134,7 @@ void BME280TemperatureSensorStateMachine::startSampling() {
 
   delay(measurementDelay);
 
-  bme280_data comp_data;
-  bmeErrorCheck(bme280_get_sensor_data(BME280_ALL, &comp_data, &dev),
+  bmeErrorCheck(bme280_get_sensor_data(BME280_ALL, &value, &dev),
                 "bme280_get_sensor_data");
 
   // Tmperature in 100th oC
@@ -150,10 +156,10 @@ void BME280TemperatureSensorStateMachine::startSampling() {
   // Serial.print(endTime - startTime);
 
   Serial.print(F(" Humidity: "));
-  Serial.print(comp_data.humidity / 1024, DEC);
+  Serial.print(value.humidity / 1024, DEC);
 
   Serial.print(F(" Pressure: "));
-  Serial.print(comp_data.pressure, DEC);
+  Serial.print(value.pressure, DEC);
 
   /*
     Serial.print(" Alt: ");
@@ -164,7 +170,7 @@ void BME280TemperatureSensorStateMachine::startSampling() {
     value = temp;
   */
   Serial.print(F(" Temp: "));
-  float temperature = comp_data.temperature / 100.0f;
+  float temperature = value.temperature / 100.0f;
   Serial.print(temperature, DEC);
   // Serial.print(bme280.readTempF(), 2);
 
@@ -172,9 +178,44 @@ void BME280TemperatureSensorStateMachine::startSampling() {
   // we want to TX hunders of degrees -> matches!
   // But we need a sign-perfect narrowing conversion.
 
-  value = comp_data.temperature;
-
   Serial.println();
 
   this->state = SensorValueStatus::kSampleAvailable;
+  nextSensorForTX = 0;
+}
+
+void BME280TemperatureSensorStateMachine::transmitSample() {
+  if (state == SensorValueStatus::kSampleAvailable) {
+    for (; nextSensorForTX < numSensors; ++nextSensorForTX) {
+      bool sendSucces;
+      switch (nextSensorForTX) {
+        case 0: /* temperature */ 
+        {
+          int16_t temp = value.temperature;
+          sendSucces = do_transmit_single(pipes[0],
+                                          (uint8_t *)&temp, sizeof(temp));
+          break;
+        }
+        case 1: /* Humidity */
+        {
+          uint16_t hum = value.humidity;
+          sendSucces = do_transmit_single(pipes[1],
+                                          (uint8_t *)&hum, sizeof(hum));
+          break;
+        }
+        case 2: /* Pressure */
+          sendSucces = do_transmit_single(pipes[2],
+                                          (uint8_t *)&value.pressure,
+                                          sizeof(value.pressure));
+          break;
+      }
+
+      if (!sendSucces) {
+        // If the message could not be sent, do not advance the counter.
+        return;
+      }
+    }
+    state = SensorValueStatus::kIdle;
+
+  }
 }

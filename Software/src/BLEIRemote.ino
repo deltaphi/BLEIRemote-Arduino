@@ -65,8 +65,8 @@ volatile unsigned long wakeupCounter = 0;
 BatterySensorStateMachine batterySensorSM(PIPE_BATTERY_BATTERY_LEVEL_TX);
 // nrf8001TemperatureSensorStateMachine
 // nRFTemperatureSensorSM(PIPE_ENVIRONMENTAL_SENSING_TEMPERATURE_MEASUREMENT_TX);
-BME280TemperatureSensorStateMachine bmeTemperatureSensorSM(
-    PIPE_ENVIRONMENTAL_SENSING_TEMPERATURE_MEASUREMENT_TX);
+const uint8_t bmePipes[] = {PIPE_ENVIRONMENTAL_SENSING_TEMPERATURE_MEASUREMENT_TX, PIPE_ENVIRONMENTAL_SENSING_HUMIDITY_TX, PIPE_ENVIRONMENTAL_SENSING_PRESSURE_TX};
+BME280TemperatureSensorStateMachine bmeTemperatureSensorSM(bmePipes);
 
 /**
  * ISR for RDYN low events
