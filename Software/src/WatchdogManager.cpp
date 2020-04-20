@@ -4,8 +4,7 @@
 #include <avr/wdt.h>
 
 static uint8_t watchdogEnableCount = 0;
-
-volatile bool wdgFlag;
+volatile uint8_t expiryCounter = 0;
 
 void wdg_start() {
   // Disable Interrupts & Reset Watchdog
@@ -26,7 +25,9 @@ void wdg_init() {
   watchdogEnableCount = 0;
 }
 
-ISR(WDT_vect) { wdgFlag = true; }
+ISR(WDT_vect) {
+  ++expiryCounter;
+}
 
 void incrementWatchdogEnableCount() {
   if (watchdogEnableCount == 0xFF) {
