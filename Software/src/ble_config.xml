@@ -208,6 +208,9 @@
         <ServiceToAdvertise>
             <Uuid>180f</Uuid>
         </ServiceToAdvertise>
+        <ServiceToAdvertise>
+            <Uuid>181a</Uuid>
+        </ServiceToAdvertise>
         <CustomAdTypes/>
     </Gapsettings>
     <Hardwaresettings>
