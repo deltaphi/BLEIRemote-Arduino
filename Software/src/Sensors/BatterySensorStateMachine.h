@@ -2,6 +2,7 @@
 #define __BATTERYSENSORSTATEMACHINE_H__
 
 #include <Arduino.h>
+
 #include "SensorStateMachine.h"
 
 class BatterySensorStateMachine : public SensorStateMachine<uint8_t> {

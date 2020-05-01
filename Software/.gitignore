@@ -4,5 +4,8 @@
 .vscode/launch.json
 .vscode/ipch
 
+# Temporary file for .ino support
+*.ino.cpp
+
 # nRFgo Studio output log
 ublue_setup.gen.out.txt

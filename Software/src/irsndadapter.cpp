@@ -2,8 +2,8 @@
 
 #include "irsndadapter.h"
 
-#include "irsnd.h"
 #include "irsnd.c.h"
+#include "irsnd.h"
 
 /* use TimerOne http://arduino.cc/playground/Code/Timer1 for interrupts */
 #include <TimerOne.h>
@@ -21,20 +21,17 @@ void IRSND_adapter_init() {
   Timer1.attachInterrupt(IRSND_timerinterrupt);
 }
 
-
 /* helper function: attachInterrupt wants void(), but irmp_ISR is uint8_t() */
-void IRSND_timerinterrupt()
-{
-  irsnd_ISR();          // call irsnd ISR
+void IRSND_timerinterrupt() {
+  irsnd_ISR();  // call irsnd ISR
 }
 
-
-void receivedIRMPPacket(const uint8_t * data) {
+void receivedIRMPPacket(const uint8_t* data) {
   Serial.print(F("IRMP Packet received\n"));
   memcpy(&irmp_data, data, sizeof(IRMP_DATA));
   Serial.println(F("Received Frame: "));
   printFrame(irmp_data);
-  
+
   if (!irsnd_is_busy()) {
     Serial.println(F("IRSND idle. Sending IR frame."));
     irsnd_send_data(&irmp_data, TRUE);
@@ -43,7 +40,7 @@ void receivedIRMPPacket(const uint8_t * data) {
   }
 }
 
-void printFrame(IRMP_DATA & frame) {
+void printFrame(IRMP_DATA& frame) {
   Serial.print(F("P:"));
   Serial.print(frame.protocol, HEX);
   Serial.print(F(" A:"));

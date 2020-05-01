@@ -2,10 +2,12 @@
 #ifndef __BLEADAPTER_H__
 #define __BLEADAPTER_H__
 
-#include <SPI.h>
 #include <EEPROM.h>
+#include <SPI.h>
+// clang-format off
 #include <lib_aci.h>
 #include <aci_setup.h>
+// clang-format on
 
 /**
   Put the nRF8001 setup in the RAM of the nRF8001.
@@ -29,9 +31,8 @@ void ble_loop();
 bool ble_available();
 void ble_setWorkAvailable();
 
-
-extern void ble_dataReceived_Cbk(uint8_t pipe, uint8_t * data, uint8_t len);
+extern void ble_dataReceived_Cbk(uint8_t pipe, uint8_t* data, uint8_t len);
 extern void ble_pipeEvent_Cbk();
 extern void ble_temperature_Cbk(uint16_t temperature);
 
-#endif // __BLEADAPTER_H__
+#endif  // __BLEADAPTER_H__
