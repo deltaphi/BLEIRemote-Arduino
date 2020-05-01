@@ -10,11 +10,17 @@
 #include "BLEDevice.h"
 //#include "BLEScan.h"
 
+int scanTime = 5; //In seconds
+
 // The remote service we wish to connect to.
-static BLEUUID serviceUUID("0000180f-0000-1000-8000-00805f9b34fb");  // UUID of the battery service. Well...
+static BLEUUID batteryServiceUUID("0000180f-0000-1000-8000-00805f9b34fb");  // UUID of the battery service. Well...
+static BLEUUID environmentalSensingServiceUUID("0000181a-0000-1000-8000-00805f9b34fb");  // UUID of the battery service. Well...
 
 // The characteristic of the remote service we are interested in.
-static BLEUUID    charUUID("00002a19-0000-1000-8000-00805f9b34fb");
+static BLEUUID batteryChargeCharUUID("00002a19-0000-1000-8000-00805f9b34fb");
+static BLEUUID temperatureCharUUID("00002a1c-0000-1000-8000-00805f9b34fb");
+static BLEUUID humidityCharUUID("00002a6f-0000-1000-8000-00805f9b34fb");
+static BLEUUID pressureCharUUID("00002a6d-0000-1000-8000-00805f9b34fb");
 
 static boolean doConnect = false;
 static boolean connected = false;
@@ -59,10 +65,10 @@ bool connectToServer() {
     Serial.println(" - Connected to server");
 
     // Obtain a reference to the service we are after in the remote BLE server.
-    BLERemoteService* pRemoteService = pClient->getService(serviceUUID);
+    BLERemoteService* pRemoteService = pClient->getService(environmentalSensingServiceUUID);
     if (pRemoteService == nullptr) {
       Serial.print("Failed to find our service UUID: ");
-      Serial.println(serviceUUID.toString().c_str());
+      Serial.println(environmentalSensingServiceUUID.toString().c_str());
       pClient->disconnect();
       return false;
     }
@@ -70,10 +76,10 @@ bool connectToServer() {
 
 
     // Obtain a reference to the characteristic in the service of the remote BLE server.
-    pRemoteCharacteristic = pRemoteService->getCharacteristic(charUUID);
+    pRemoteCharacteristic = pRemoteService->getCharacteristic(temperatureCharUUID);
     if (pRemoteCharacteristic == nullptr) {
       Serial.print("Failed to find our characteristic UUID: ");
-      Serial.println(charUUID.toString().c_str());
+      Serial.println(temperatureCharUUID.toString().c_str());
       pClient->disconnect();
       return false;
     }
@@ -81,9 +87,10 @@ bool connectToServer() {
 
     // Read the value of the characteristic.
     if(pRemoteCharacteristic->canRead()) {
-      std::string value = pRemoteCharacteristic->readValue();
+      uint8_t value = pRemoteCharacteristic->readUInt8();
+      //std::string value = pRemoteCharacteristic->readValue();
       Serial.print("The characteristic value was: ");
-      Serial.println(value.c_str());
+      Serial.println(value, DEC);
     }
 
     if(pRemoteCharacteristic->canNotify())
@@ -104,7 +111,7 @@ class MyAdvertisedDeviceCallbacks: public BLEAdvertisedDeviceCallbacks {
     Serial.println(advertisedDevice.toString().c_str());
 
     // We have found a device, let us now see if it contains the service we are looking for.
-    if (advertisedDevice.haveServiceUUID() && advertisedDevice.isAdvertisingService(serviceUUID)) {
+    if (advertisedDevice.haveServiceUUID() && advertisedDevice.isAdvertisingService(environmentalSensingServiceUUID)) {
 
       BLEDevice::getScan()->stop();
       myDevice = new BLEAdvertisedDevice(advertisedDevice);
@@ -126,10 +133,11 @@ void setup() {
   // scan to run for 5 seconds.
   BLEScan* pBLEScan = BLEDevice::getScan();
   pBLEScan->setAdvertisedDeviceCallbacks(new MyAdvertisedDeviceCallbacks());
-  pBLEScan->setInterval(1349);
-  pBLEScan->setWindow(449);
+  pBLEScan->setInterval(100);
+  pBLEScan->setWindow(99);  // less or equal setInterval value
   pBLEScan->setActiveScan(true);
-  pBLEScan->start(5, false);
+  //pBLEScan->start(scanTime, false);
+  doScan = true;
 } // End of setup.
 
 
@@ -151,13 +159,20 @@ void loop() {
   // If we are connected to a peer BLE Server, update the characteristic each time we are reached
   // with the current time since boot.
   if (connected) {
-    String newValue = "Time since boot: " + String(millis()/1000);
-    Serial.println("Setting new characteristic value to \"" + newValue + "\"");
+    //String newValue = "Time since boot: " + String(millis()/1000);
+    //Serial.println("Setting new characteristic value to \"" + newValue + "\"");
+    Serial.print("Temperature: ");
+    uint16_t value = pRemoteCharacteristic->readUInt16();
+    // Value is in 100th degrees centigrade
+    Serial.print(value / 100, DEC);
+    Serial.print(".");
+    Serial.print(value % 100, DEC);
+    Serial.println("C.");
     
     // Set the characteristic's value to be the array of bytes that is actually a string.
-    pRemoteCharacteristic->writeValue(newValue.c_str(), newValue.length());
+    //[pRemoteCharacteristic->writeValue(newValue.c_str(), newValue.length());
   }else if(doScan){
-    BLEDevice::getScan()->start(0);  // this is just eample to start scan after disconnect, most likely there is better way to do it in arduino
+    BLEDevice::getScan()->start(scanTime, false);  // this is just eample to start scan after disconnect, most likely there is better way to do it in arduino
   }
   
   delay(1000); // Delay a second between loops.
