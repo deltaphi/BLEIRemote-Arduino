@@ -36,13 +36,17 @@ void IrRemote::doConnecting() {
   BLESensorDevice::doConnecting();
 
   // Obtain a reference to the service we are after in the remote BLE server.
-  environmentalSensingService = findServiceHelper(environmentalSensingServiceUUID);
+  environmentalSensingService =
+      findServiceHelper(environmentalSensingServiceUUID);
 
   // Obtain a reference to the characteristic in the service of the remote BLE
   // server.
-  tempChar = findCharacteristicHelper(temperatureCharUUID, environmentalSensingService);
-  humidChar = findCharacteristicHelper(humidityCharUUID, environmentalSensingService);
-  pressChar = findCharacteristicHelper(pressureCharUUID, environmentalSensingService);
+  tempChar = findCharacteristicHelper(temperatureCharUUID,
+                                      environmentalSensingService);
+  humidChar =
+      findCharacteristicHelper(humidityCharUUID, environmentalSensingService);
+  pressChar =
+      findCharacteristicHelper(pressureCharUUID, environmentalSensingService);
 
   batteryService = findServiceHelper(batteryServiceUUID);
   batteryChar = findCharacteristicHelper(batteryChargeCharUUID, batteryService);
@@ -60,13 +64,38 @@ void IrRemote::doConnecting() {
 void IrRemote::doSensing() {
   if (tempChar && tempChar->canRead()) {
     Serial.print("Temperature: ");
-    uint16_t value = tempChar->readUInt16();
+    Temp_t value = tempChar->readUInt16();
     // Value is in 100th degrees centigrade
     Serial.print(value / 100, DEC);
     Serial.print(".");
     Serial.print(value % 100, DEC);
-    Serial.println("C.");
+    Serial.print("C ");
   }
+
+  if (humidChar && humidChar->canRead()) {
+    Serial.print("Humidity: ");
+    Humidity_t value = humidChar->readUInt16();
+    // Value is in ...?
+    Serial.print(value, DEC);
+    Serial.print("% ");
+  }
+
+  if (pressChar && pressChar->canRead()) {
+    Serial.print("Pressure: ");
+    Pressure_t value = pressChar->readUInt16();
+    // Value is in ...?
+    Serial.print(value, DEC);
+    Serial.print("hPa ");
+  }
+  if (batteryChar && batteryChar->canRead()) {
+    Serial.print("Battery: ");
+    BatteryLevel_t value = batteryChar->readUInt8();
+    // Value is in percent of charge.
+    Serial.print(value, DEC);
+    Serial.print("% ");
+  }
+
+  Serial.println();
 }
 
 void IrRemote::onDisconnect(BLEClient* pclient) {
