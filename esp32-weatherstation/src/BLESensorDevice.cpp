@@ -49,8 +49,15 @@ BLESensorDevice::ServicePtr BLESensorDevice::findServiceHelper(BLEUUID& uuid) {
     // getClient()->disconnect();
     // setState(kDisconnected);
     // return;
+  } else {
+    Serial.println(" - Found service.");
+    auto chars = service->getCharacteristics();
+    for (auto & charct : *chars) {
+      Serial.print(charct.first.c_str());
+      Serial.print(", ");
+    }
+    Serial.println("<- Characteristics.");
   }
-  Serial.println(" - Found service.");
   return service;
 }
 
@@ -59,16 +66,17 @@ BLESensorDevice::CharacteristicPtr BLESensorDevice::findCharacteristicHelper(
   CharacteristicPtr characteristic;
 
   if (service) {
-    CharacteristicPtr characteristic =
+    characteristic =
         CharacteristicPtr(service->getCharacteristic(uuid));
-    if (characteristic) {
+    if (!characteristic) {
       Serial.print("Failed to find characteristic UUID: ");
       Serial.println(uuid.toString().c_str());
       // getClient()->disconnect();
       // setState(kDisconnected);
       // return false;
+    } else {
+      Serial.println(" - Found characteristic.");
     }
-    Serial.println(" - Found characteristic.");
   }
 
   return characteristic;
