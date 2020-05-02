@@ -64,7 +64,10 @@ void IrRemote::doConnecting() {
 void IrRemote::doSensing() {
   if (tempChar && tempChar->canRead()) {
     Serial.print("Temperature: ");
-    Temp_t value = tempChar->readUInt16();
+
+    uint16_t tempValue = tempChar->readUInt16();
+    Temp_t value = *(Temp_t*)(&tempValue);
+
     // Value is in 100th degrees centigrade
     Serial.print(value / 100, DEC);
     Serial.print(".");
@@ -75,18 +78,23 @@ void IrRemote::doSensing() {
   if (humidChar && humidChar->canRead()) {
     Serial.print("Humidity: ");
     Humidity_t value = humidChar->readUInt16();
-    // Value is in ...?
-    Serial.print(value, DEC);
+    // Value is in 100th percent
+    Serial.print(value / 100, DEC);
+    Serial.print(".");
+    Serial.print(value % 100, DEC);
     Serial.print("% ");
   }
 
   if (pressChar && pressChar->canRead()) {
     Serial.print("Pressure: ");
-    Pressure_t value = pressChar->readUInt16();
-    // Value is in ...?
-    Serial.print(value, DEC);
+    Pressure_t value = pressChar->readUInt32();
+    // Value is in 10th hPa (?)
+    Serial.print(value / 10, DEC);
+    Serial.print(".");
+    Serial.print(value % 10, DEC);
     Serial.print("hPa ");
   }
+
   if (batteryChar && batteryChar->canRead()) {
     Serial.print("Battery: ");
     BatteryLevel_t value = batteryChar->readUInt8();

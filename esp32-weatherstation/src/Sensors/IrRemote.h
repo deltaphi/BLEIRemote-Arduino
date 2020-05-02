@@ -12,8 +12,8 @@ namespace Sensors {
 
 class IrRemote : public BLESensorDevice {
  public:
-  using Temp_t = uint16_t;  // Temperature in 100th degrees centigrade.
-  using Pressure_t = uint16_t;
+  using Temp_t = int16_t;  // Temperature in 100th degrees centigrade.
+  using Pressure_t = uint32_t;
   using Humidity_t = uint16_t;
   using BatteryLevel_t = uint8_t;
 
